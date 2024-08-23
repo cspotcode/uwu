@@ -129,6 +129,7 @@ void BridgeListener::OnDOMReady(View* view, uint64_t frame_id, bool is_main_fram
 
 
 static bool initialized = false;
+static bool use_gpu = false;
 extern "C" ULBAPI void ulbridge_init(bool gpu) {
   std::cerr << "***ULBRIDGE INIT " << initialized << std::endl;
   if (initialized)
@@ -136,9 +137,8 @@ extern "C" ULBAPI void ulbridge_init(bool gpu) {
   initialized = true;
   // Do any custom config here
   Config config;
-  config.resource_path = "./resources/";
-  config.use_gpu_renderer = gpu;
-  config.device_scale = 1.0;
+  config.resource_path_prefix = "./resources/";
+  use_gpu = gpu;
   //config.force_repaint = true;
   Platform::instance().set_config(config);
   //Platform::instance().set_gpu_driver(my_gpu_driver);
@@ -236,7 +236,11 @@ extern "C" ULBAPI void ulbridge_update()
 
 extern "C" ULBAPI void ulbridge_view_create(const char* name, int w, int h)
 {
-  RefPtr<View> view = renderer->CreateView(w, h, true, nullptr);
+  ViewConfig config;
+  config.is_transparent = true;
+  config.is_accelerated = use_gpu;
+  config.initial_device_scale = 1.0;
+  RefPtr<View> view = renderer->CreateView(w, h, config, nullptr);
   views[name] = ViewData{ view, nullptr};
   views[name].listener = std::make_unique<BridgeListener>(name, view.get());
 }
